@@ -72,11 +72,10 @@ class Snake {
       console.log('clearInterval')
       restart()
     }
-    // if (this.x === apple[0] && this.y === apple[1]) {
-    //   this.grow()
-    //   apple = generateAppleCoordinates()
-    // }
-    this.grow()
+    if (this.x === apple[0] && this.y === apple[1]) {
+      this.grow()
+      apple = generateAppleCoordinates()
+    }
     if (this.x < 0 || this.x >= n || this.y < 0 || this.y >= n) {
       restart()
     }
