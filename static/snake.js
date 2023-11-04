@@ -1,15 +1,20 @@
 var dir = null
 var gameLoop = null
 const n = 12
+var gameSpeed = 1
 
-var ax = -1
-var ay = -1
+var apple = null
+var head = null
 
-const generateAppleCoordinates = () => {
-  let x = Math.floor(Math.random() * n)
-  let y = Math.floor(Math.random() * n)
+const restart = () => {
+  if (gameLoop) {
+    clearInterval(gameLoop)
+  }
+  setTimeout(() => {
+    dir = null
+    head = new Snake(6, 6)
+  }, 2000)
 }
-// todo: spawn apple and grow when eating
 
 class Snake {
   constructor(x, y) {
@@ -17,6 +22,11 @@ class Snake {
     this.y = y
     this.length = 1
     this.next = null
+  }
+
+  grow() {
+    const end = this.getEnd()
+    this.growTo(end[0], end[1])
   }
 
   growTo(x, y) {
@@ -30,7 +40,7 @@ class Snake {
 
   getEnd() {
     if (this.next) return this.next.getEnd()
-    return [x, y]
+    return [this.x, this.y]
   }
 
   moveTo(x, y) {
@@ -53,8 +63,22 @@ class Snake {
     }
     this.x += dx
     this.y += dy
+    if (this.next) {
+      console.log(
+        `head: (${this.x}, ${this.y}); next: (${this.next.x}, ${this.next.y})`
+      )
+    }
+    if (this.next && this.next.contains(this.x, this.y)) {
+      console.log('clearInterval')
+      restart()
+    }
+    // if (this.x === apple[0] && this.y === apple[1]) {
+    //   this.grow()
+    //   apple = generateAppleCoordinates()
+    // }
+    this.grow()
     if (this.x < 0 || this.x >= n || this.y < 0 || this.y >= n) {
-      clearInterval(gameLoop)
+      restart()
     }
   }
 
@@ -63,9 +87,28 @@ class Snake {
     if (this.next !== null) return this.next.contains(x, y)
     return false
   }
+
+  size() {
+    if (this.next) return 1 + this.next.size()
+    else return 1
+  }
 }
 
-const head = new Snake(6, 6)
+head = new Snake(6, 6)
+const generateAppleCoordinates = () => {
+  let x = null,
+    y = null
+  while (x == null || y == null) {
+    x = Math.floor(Math.random() * n)
+    y = Math.floor(Math.random() * n)
+    if (head.contains(x, y)) {
+      x = null
+      y = null
+    }
+  }
+  return [x, y]
+}
+apple = generateAppleCoordinates()
 
 const init = () => {
   const html = document.getElementsByTagName('html').item(0),
@@ -89,7 +132,7 @@ const init = () => {
         gameLoop = setInterval(() => {
           console.log('interval')
           head.move(dir)
-        }, 200)
+        }, 200 / gameSpeed)
       }
     }
   }
@@ -102,11 +145,11 @@ const init = () => {
     const left = canvas.width / 2 - 300
     const top = canvas.height / 2 - 300
     context.strokeRect(left, top, 600, 600)
-    context.fillStyle = '#0000ff'
-    for (let i = 0; i < n; i++) {
-      context.fillRect(left + (600 / n) * i, top, 5, 600)
-      context.fillRect(left, top + (600 / n) * i, 600, 5)
-    }
+    // context.fillStyle = '#0000ff'
+    // for (let i = 0; i < n; i++) {
+    //   context.fillRect(left + (600 / n) * i, top, 5, 600)
+    //   context.fillRect(left, top + (600 / n) * i, 600, 5)
+    // }
     let s = head
     context.fillStyle = '#0000ff'
     while (s !== null) {
@@ -118,6 +161,21 @@ const init = () => {
       )
       s = s.next
     }
+
+    // Draw apple
+    context.fillStyle = '#ff0000'
+    context.fillRect(
+      left + (600 / n) * apple[0],
+      top + (600 / n) * apple[1],
+      600 / n,
+      600 / n
+    )
+
+    if (head.size() === 144) {
+      restart()
+      gameSpeed += 0.25
+    }
+
     i++
     last = t
     window.requestAnimationFrame(loop)
