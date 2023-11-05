@@ -12,6 +12,7 @@ from scipy.signal import find_peaks
 from moviepy.editor import VideoFileClip
 from urllib.parse import urlparse, parse_qs
 from yt_dlp import YoutubeDL
+import os
 
 class Pipeline():
     def __init__(self, url):
@@ -19,14 +20,11 @@ class Pipeline():
         self.full_video_name = self.get_id_from_url() + '.mp4'
         self.coords = None
 
-        self.download_youtube_video()
-        #self.scrape_svg()
-        #Xs, ys = self.get_histogram()
-        try:
-            Xs, ys, vid_time = self.new_DL()
-        except:
-            print("Age restricted")
-            return
+        error_code = self.download_youtube_video()
+        if error_code == 0:
+            raise Exception('Age restricted')
+
+        Xs, ys, vid_time = self.get_heatmap()
         bs = self.find_clips(Xs, ys, vid_time)
         self.clip_videos(bs, Xs)
 
@@ -38,7 +36,7 @@ class Pipeline():
         return id[0]
 
 
-    def new_DL(self):
+    def get_heatmap(self):
         with YoutubeDL({}) as ydl:
             info = ydl.extract_info(self.url, download=False)
 
@@ -55,13 +53,15 @@ class Pipeline():
     def download_youtube_video(self):
         try:
             # Create a YouTube object
-            yt = YouTube(self.url)
+            yt = YouTube(self.url, use_oauth=True, allow_oauth_cache=True)
 
             # Choose the stream with the highest resolution
             stream = yt.streams.get_highest_resolution()
 
             # Specify the download location (replace with your desired directory)
-            download_dir = "/Users/mikeyjoyce/Documents/tigerhacks-2023"
+            id = self.get_id_from_url()
+            download_dir = f"/Users/mikeyjoyce/Documents/tigerhacks-2023/static/clips/{id}"
+            os.mkdir(download_dir)
 
             start_time = time.time()  # Record the start time
 
@@ -72,68 +72,10 @@ class Pipeline():
             elapsed_time = end_time - start_time
 
             print(f"Download complete! Time taken: {elapsed_time:.2f} seconds")
+            return 1
         except Exception as e:
             print("An error occurred:", str(e))
-
-    def scrape_svg(self):
-        response = requests.get(self.url)
-        #DRIVER_PATH = 'chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing'
-        driver = webdriver.Chrome()
-
-        try:
-            driver.get(self.url)
-            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, 'html')))
-            time.sleep(10)
-            button = driver.find_element_by_class_name('ytp-ad-skip-button-container')
-            button.click()
-            time.sleep(10)
-            elements = driver.find_element(By.CLASS_NAME, 'ytp-heat-map-path')
-
-            if elements:
-                self.coords = elements.get_attribute('d')
-            else:
-                print("No elements with target class found on the page.")
-        finally:
-            driver.quit()
-
-    def get_histogram(self):
-        words = self.coords.split()
-
-        # Initialize a list to store floating-point numbers
-        nums = []
-
-        # Iterate through the words and check if they can be converted to a float
-        for word in words:
-            if ',' in word:
-                temp = word.split(',')
-            else:
-                continue
-
-            for num in temp:
-                try:
-                    n = float(num)
-                    nums.append(n)
-                except ValueError:
-                    pass
-
-        self.coords = nums
-
-        X, y = [], []
-        isX = True
-        for coord in self.coords:
-            if isX:
-                # Divide by 100% to make it a percentage of video elapsed
-                X.append(float(coord) / 1000)
-                isX = False
-            else:
-                y.append(float(-coord))  # (100-coord)/coord)
-                isX = True
-
-        # Normalize values
-        y_arr = np.array(y)
-        normalized_y = y_arr - y_arr.min()
-
-        return X, normalized_y
+            return 0
 
     def find_clips(self, X, y, end):
         norm_density = y / y.sum()
@@ -141,7 +83,7 @@ class Pipeline():
 
         peaks = find_peaks(norm_density_ma, prominence=0.0005)[0]
 
-        plt.plot(X, norm_density_ma)
+        #plt.plot(X, norm_density_ma)
 
         bounds = []
         s1, s2 = 15, 100
@@ -152,7 +94,7 @@ class Pipeline():
             u = min(peak + upper_magnitude, end)
             bounds.append((l, u))
 
-        print(bounds)
+        #print(bounds)
 
         flag, last, new_loop = True, bounds.copy(), False
         while flag:
@@ -178,12 +120,12 @@ class Pipeline():
         if len(last) > 0:
             bounds = last
 
-        for i in range(len(peaks)):
-            plt.axvline(X[peaks[i]], color='r')
+        #for i in range(len(peaks)):
+        #    plt.axvline(X[peaks[i]], color='r')
 
-        for i in range(len(bounds)):
-            plt.axvspan(X[bounds[i][0]], X[bounds[i][1]], color='y', alpha=0.5, lw=0)
-        plt.show()
+        #for i in range(len(bounds)):
+        #    plt.axvspan(X[bounds[i][0]], X[bounds[i][1]], color='y', alpha=0.5, lw=0)
+        #plt.show()
 
         return bounds
 
@@ -191,16 +133,19 @@ class Pipeline():
         video = VideoFileClip(self.full_video_name)
 
         count = 1
+        download_dir = f"/Users/mikeyjoyce/Documents/tigerhacks-2023/static/clips/{id}"
+
         for b in bounds:
             start = X[b[0]] * video.duration
             end = X[b[1]] * video.duration
             edited_video = video.subclip(start, end)
-            file_path = str(start) + "_" + str(end) + ".mp4"
+
+            file_path = download_dir + str(int(start)) + "_" + str(int(end)) + ".mp4"
             edited_video.write_videofile(file_path, codec='libx264', audio_codec='aac', temp_audiofile='temp-audio.m4a',
                                          remove_temp=True)
             count += 1
 
 if __name__ == "__main__":
-    #p = Pipeline("https://www.youtube.com/watch?v=sqoOzGMqCQU")
+    p = Pipeline("https://www.youtube.com/watch?v=sqoOzGMqCQU")
     #p = Pipeline("https://www.youtube.com/watch?v=1b2XscG9Lfk")
-    p = Pipeline("https://www.youtube.com/watch?v=U9FM49Tzhn4")
+    #p = Pipeline("https://www.youtube.com/watch?v=ynU-wVdesr0")
