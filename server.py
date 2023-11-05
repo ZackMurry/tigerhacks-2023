@@ -35,3 +35,12 @@ def get_clips():
   url = request.args['url']
   id = get_id_from_url(url)
   return ['/static/clips/0.mp4', '/static/clips/1.mp4', '/static/clips/2.mp4']
+
+
+
+@app.route('/status')
+def get_status():
+  url = request.args['url']
+  id = get_id_from_url(url)
+  num = request.args['num']
+  return '1' if int(num) > 10 else '0'

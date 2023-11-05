@@ -6,6 +6,29 @@ var gameSpeed = 1
 var apple = null
 var head = null
 
+const params = new URLSearchParams(window.location.search)
+const url = params.get('url')
+// console.log('url: ' + url)
+
+let pingStatus = 0
+var num = 0
+let ping = setInterval(() => {
+  ;(async function () {
+    const response = await fetch(
+      `/status?url=${encodeURIComponent(url)}&num=${num++}`
+    )
+    if (!response.ok) {
+      pingStatus = -1
+      clearInterval(ping)
+      return
+    }
+    const text = await response.text()
+    if (text === '1') {
+      window.open(`/preview?url=${encodeURIComponent(url)}`, '_self')
+    }
+  })()
+}, 1000)
+
 const restart = () => {
   if (gameLoop) {
     clearInterval(gameLoop)
@@ -64,9 +87,9 @@ class Snake {
     this.x += dx
     this.y += dy
     if (this.next) {
-      console.log(
-        `head: (${this.x}, ${this.y}); next: (${this.next.x}, ${this.next.y})`
-      )
+      // console.log(
+      // `head: (${this.x}, ${this.y}); next: (${this.next.x}, ${this.next.y})`
+      // )
     }
     if (this.next && this.next.contains(this.x, this.y)) {
       console.log('clearInterval')
@@ -126,7 +149,7 @@ const init = () => {
     const temp = dir
     if (['w', 'a', 's', 'd'].includes(key)) {
       dir = key
-      console.log(dir)
+      // console.log(dir)
       if (temp === null) {
         gameLoop = setInterval(() => {
           console.log('interval')
