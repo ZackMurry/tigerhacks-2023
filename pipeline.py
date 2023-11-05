@@ -3,14 +3,15 @@ import pandas as pd
 from pytube import YouTube
 import time
 import requests
-from selenium import webdriver
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
+#from selenium import webdriver
+#from selenium.webdriver.support.ui import WebDriverWait
+#from selenium.webdriver.support import expected_conditions as EC
+#from selenium.webdriver.common.by import By
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
 from moviepy.editor import VideoFileClip
 from urllib.parse import urlparse, parse_qs
+from yt_dlp import YoutubeDL
 
 class Pipeline():
     def __init__(self, url):
@@ -19,9 +20,14 @@ class Pipeline():
         self.coords = None
 
         self.download_youtube_video()
-        self.scrape_svg()
-        Xs, ys = self.get_histogram()
-        bs = self.find_clips(Xs, ys)
+        #self.scrape_svg()
+        #Xs, ys = self.get_histogram()
+        try:
+            Xs, ys, vid_time = self.new_DL()
+        except:
+            print("Age restricted")
+            return
+        bs = self.find_clips(Xs, ys, vid_time)
         self.clip_videos(bs, Xs)
 
     def get_id_from_url(self):
@@ -31,6 +37,21 @@ class Pipeline():
             return None
         return id[0]
 
+
+    def new_DL(self):
+        with YoutubeDL({}) as ydl:
+            info = ydl.extract_info(self.url, download=False)
+
+        start, end, val = [], [], []
+        counts, i = [], 0
+        for item in info['heatmap']:
+            start.append(item['start_time'])
+            end.append(item['end_time'])
+            val.append(item['value'])
+            counts.append(i / len(info['heatmap']))
+            i += 1
+
+        return counts, np.array(val), end[-1]
     def download_youtube_video(self):
         try:
             # Create a YouTube object
@@ -40,7 +61,7 @@ class Pipeline():
             stream = yt.streams.get_highest_resolution()
 
             # Specify the download location (replace with your desired directory)
-            download_dir = "/home/zack/tigerhacks-2023"
+            download_dir = "/Users/mikeyjoyce/Documents/tigerhacks-2023"
 
             start_time = time.time()  # Record the start time
 
@@ -114,7 +135,7 @@ class Pipeline():
 
         return X, normalized_y
 
-    def find_clips(self, X, y):
+    def find_clips(self, X, y, end):
         norm_density = y / y.sum()
         norm_density_ma = pd.Series(norm_density).rolling(10, center=True).mean().values
 
@@ -123,11 +144,17 @@ class Pipeline():
         plt.plot(X, norm_density_ma)
 
         bounds = []
-        bound_magnitude = 15
+        s1, s2 = 15, 100
+        lower_magnitude = int(50 * s1 / end)
+        upper_magnitude = int(50 * s2 / end)
         for peak in peaks:
-            bounds.append((peak - bound_magnitude, peak + bound_magnitude))
+            l = max(peak - lower_magnitude, 0)
+            u = min(peak + upper_magnitude, end)
+            bounds.append((l, u))
 
-        flag, last = True, bounds.copy()
+        print(bounds)
+
+        flag, last, new_loop = True, bounds.copy(), False
         while flag:
             print(last)
 
@@ -161,7 +188,7 @@ class Pipeline():
         return bounds
 
     def clip_videos(self, bounds, X):
-        video = VideoFileClip(self.full_video_path)
+        video = VideoFileClip(self.full_video_name)
 
         count = 1
         for b in bounds:
@@ -174,4 +201,6 @@ class Pipeline():
             count += 1
 
 if __name__ == "__main__":
-    p = Pipeline("https://www.youtube.com/watch?v=sqoOzGMqCQU")
+    #p = Pipeline("https://www.youtube.com/watch?v=sqoOzGMqCQU")
+    #p = Pipeline("https://www.youtube.com/watch?v=1b2XscG9Lfk")
+    p = Pipeline("https://www.youtube.com/watch?v=U9FM49Tzhn4")
