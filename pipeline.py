@@ -40,7 +40,7 @@ class Pipeline():
             stream = yt.streams.get_highest_resolution()
 
             # Specify the download location (replace with your desired directory)
-            download_dir = "/Users/mikeyjoyce/Documents/tigerhacks-2023"
+            download_dir = "/home/zack/tigerhacks-2023"
 
             start_time = time.time()  # Record the start time
 
