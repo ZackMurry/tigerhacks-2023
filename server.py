@@ -1,5 +1,8 @@
 from flask import Flask, send_file, send_from_directory, request
 from urllib.parse import urlparse, parse_qs
+from pipeline import Pipeline
+import threading
+import os
 
 app = Flask('server')
 
@@ -18,10 +21,14 @@ def send_index():
 def send_static(path):
     return send_from_directory('static', path)
 
+def start_pipeline(url):
+  Pipeline(url)
+
 @app.route('/video')
 def process():
   url = request.args['url']
   print(url)
+  threading.Thread(target=start_pipeline, args=(url,)).start()
   return send_file('snake.html')
 
 
@@ -34,6 +41,13 @@ def preview_videos():
 def get_clips():
   url = request.args['url']
   id = get_id_from_url(url)
+  dir = f"/Users/mikeyjoyce/Documents/tigerhacks-2023/static/clips/{id}/"
+  if not os.path.exists(dir):
+    return '0'
+  files = os.listdir(dir)
+  vid_name = dir + id + ".mp4"
+  if vid_name in files: files.remove(vid_name)
+  print(files)
   return ['/static/clips/0.mp4', '/static/clips/1.mp4', '/static/clips/2.mp4']
 
 
@@ -43,4 +57,10 @@ def get_status():
   url = request.args['url']
   id = get_id_from_url(url)
   num = request.args['num']
-  return '1' if int(num) > 10 else '0'
+
+  dir = f"/Users/mikeyjoyce/Documents/tigerhacks-2023/static/clips/{id}/"
+  if not os.path.exists(dir):
+    return '0'
+  files = os.listdir(dir)
+  print(files)
+  return '1' if len(files) > 1 else '0'

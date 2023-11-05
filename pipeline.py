@@ -51,6 +51,7 @@ class Pipeline():
 
         return counts, np.array(val), end[-1]
     def download_youtube_video(self):
+        print('Downloading...')
         try:
             # Create a YouTube object
             yt = YouTube(self.url, use_oauth=True, allow_oauth_cache=True)
@@ -130,10 +131,11 @@ class Pipeline():
         return bounds
 
     def clip_videos(self, bounds, X):
-        video = VideoFileClip(self.full_video_name)
+        id = self.get_id_from_url()
+        download_dir = f"/Users/mikeyjoyce/Documents/tigerhacks-2023/static/clips/{id}/"
+        video = VideoFileClip(download_dir + self.full_video_name)
 
         count = 1
-        download_dir = f"/Users/mikeyjoyce/Documents/tigerhacks-2023/static/clips/{id}"
 
         for b in bounds:
             start = X[b[0]] * video.duration
