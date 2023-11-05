@@ -45,10 +45,12 @@ def get_clips():
   if not os.path.exists(dir):
     return '0'
   files = os.listdir(dir)
-  vid_name = dir + id + ".mp4"
+  vid_name = id + ".mp4"
   if vid_name in files: files.remove(vid_name)
   print(files)
-  return ['/static/clips/0.mp4', '/static/clips/1.mp4', '/static/clips/2.mp4']
+  for i in range(len(files)):
+    files[i] = f"/static/clips/{id}/{files[i]}"
+  return files
 
 
 
@@ -56,11 +58,10 @@ def get_clips():
 def get_status():
   url = request.args['url']
   id = get_id_from_url(url)
-  num = request.args['num']
 
   dir = f"/Users/mikeyjoyce/Documents/tigerhacks-2023/static/clips/{id}/"
   if not os.path.exists(dir):
     return '0'
   files = os.listdir(dir)
-  print(files)
+  # print(files)
   return '1' if len(files) > 1 else '0'

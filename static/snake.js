@@ -11,11 +11,10 @@ const url = params.get('url')
 // console.log('url: ' + url)
 
 let pingStatus = 0
-var num = 0
 let ping = setInterval(() => {
   ;(async function () {
     const response = await fetch(
-      `/status?url=${encodeURIComponent(url)}&num=${num++}`
+      `/status?url=${encodeURIComponent(url)}`
     )
     if (!response.ok) {
       pingStatus = -1

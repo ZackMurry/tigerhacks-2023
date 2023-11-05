@@ -142,7 +142,7 @@ class Pipeline():
             end = X[b[1]] * video.duration
             edited_video = video.subclip(start, end)
 
-            file_path = download_dir + str(int(start)) + "_" + str(int(end)) + ".mp4"
+            file_path = download_dir + str(int(start)) + "-" + str(int(end)) + ".mp4"
             edited_video.write_videofile(file_path, codec='libx264', audio_codec='aac', temp_audiofile='temp-audio.m4a',
                                          remove_temp=True)
             count += 1
