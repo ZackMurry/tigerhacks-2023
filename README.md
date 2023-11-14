@@ -1,5 +1,5 @@
 # Rapid Reels
-### First Place Prize at TigerHacks 2023
+### 1st Place at TigerHacks 2023
 
 ![image](https://github.com/ZackMurry/tigerhacks-2023/assets/64462489/5e6f9723-2947-4c13-87bf-1ea7cb321964)
 
